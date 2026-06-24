@@ -1,0 +1,422 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local mouse = player:GetMouse()
+local runService = game:GetService("RunService")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DynamicTeleportMenu"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 320, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -160, 0.4, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 10)
+frameCorner.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, -70, 0, 40)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Teleportation Manager"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainFrame
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 25, 0, 25)
+minimizeButton.Position = UDim2.new(1, -60, 0, 7)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.Font = Enum.Font.SourceSansBold
+minimizeButton.TextSize = 16
+minimizeButton.Parent = mainFrame
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minimizeButton
+
+local exitButton = Instance.new("TextButton")
+exitButton.Size = UDim2.new(0, 25, 0, 25)
+exitButton.Position = UDim2.new(1, -30, 0, 7)
+exitButton.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+exitButton.Text = "X"
+exitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+exitButton.Font = Enum.Font.SourceSansBold
+exitButton.TextSize = 14
+exitButton.Parent = mainFrame
+
+local exitCorner = Instance.new("UICorner")
+exitCorner.CornerRadius = UDim.new(0, 6)
+exitCorner.Parent = exitButton
+
+local navBar = Instance.new("Frame")
+navBar.Name = "NavBar"
+navBar.Size = UDim2.new(1, -20, 0, 35)
+navBar.Position = UDim2.new(0, 10, 0, 45)
+navBar.BackgroundTransparency = 1
+navBar.Parent = mainFrame
+
+local navLayout = Instance.new("UIListLayout")
+navLayout.Parent = navBar
+navLayout.FillDirection = Enum.FillDirection.Horizontal
+navLayout.Padding = UDim.new(0, 4)
+navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local container = Instance.new("Frame")
+container.Name = "Container"
+container.Size = UDim2.new(1, 0, 1, -95)
+container.Position = UDim2.new(0, 0, 0, 90)
+container.BackgroundTransparency = 1
+container.Parent = mainFrame
+
+local function createScrollingPanel(name)
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Name = name .. "Panel"
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.ScrollBarThickness = 6
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
+    scrollFrame.Visible = false
+    scrollFrame.Parent = container
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = scrollFrame
+    layout.Padding = UDim.new(0, 8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+    end)
+
+    return scrollFrame
+end
+
+local lobbyPanel = createScrollingPanel("Lobby")
+local doodlePanel = createScrollingPanel("DoodleSphere")
+local xpPanel = createScrollingPanel("XPGrinding")
+local miscPanel = createScrollingPanel("Misc")
+
+local sections = {
+    {panel = lobbyPanel, button = nil, label = "Lobby"},
+    {panel = doodlePanel, button = nil, label = "Doodle S."},
+    {panel = xpPanel, button = nil, label = "XP Grind"},
+    {panel = miscPanel, button = nil, label = "Misc"}
+}
+
+local function showSection(targetPanel)
+    for _, sec in ipairs(sections) do
+        if sec.panel == targetPanel then
+            sec.panel.Visible = true
+            sec.button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        else
+            sec.panel.Visible = false
+            sec.button.BackgroundColor3 = Color3.fromRGB(45, 52, 54)
+        end
+    end
+end
+
+for _, sec in ipairs(sections) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.25, -3, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 52, 54)
+    btn.Text = sec.label
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 12
+    btn.Parent = navBar
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = btn
+
+    sec.button = btn
+    btn.MouseButton1Click:Connect(function()
+        showSection(sec.panel)
+    end)
+end
+
+showSection(lobbyPanel)
+
+local function createTeleportButton(parentPanel, name, text, order, onClickFunc)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0, 280, 0, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(53, 59, 72)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansSemibold
+    btn.TextSize = 14
+    btn.LayoutOrder = order
+    btn.Parent = parentPanel
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(onClickFunc)
+    return btn
+end
+
+local function createSlider(parentPanel, name, text, defaultValue, maxValue, order, onChangeFunc)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = name .. "Frame"
+    sliderFrame.Size = UDim2.new(0, 280, 0, 50)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(45, 52, 54)
+    sliderFrame.LayoutOrder = order
+    sliderFrame.Parent = parentPanel
+
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(0, 6)
+    sCorner.Parent = sliderFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 25)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. tostring(defaultValue)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansSemibold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = sliderFrame
+
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(1, -20, 0, 6)
+    track.Position = UDim2.new(0, 10, 0, 32)
+    track.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    track.BorderSizePixel = 0
+    track.Parent = sliderFrame
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(defaultValue / maxValue, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+
+    local trigger = Instance.new("TextButton")
+    trigger.Size = UDim2.new(1, 0, 1, 0)
+    trigger.BackgroundTransparency = 1
+    trigger.Text = ""
+    trigger.Parent = track
+
+    local function updateSlider(inputX)
+        local percentage = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        fill.Size = UDim2.new(percentage, 0, 1, 0)
+        local finalValue = math.round(percentage * maxValue)
+        label.Text = text .. ": " .. tostring(finalValue)
+        onChangeFunc(finalValue)
+    end
+
+    local dragging = false
+    trigger.MouseButton1Down:Connect(function()
+        dragging = true
+        updateSlider(mouse.X)
+    end)
+
+    mouse.Move:Connect(function()
+        if dragging then updateSlider(mouse.X) end
+    end)
+
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+end
+
+local function teleportToCFrame(targetCFrame)
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character:PivotTo(targetCFrame + Vector3.new(0, 3, 0))
+    end
+end
+
+createTeleportButton(lobbyPanel, "TP_WeakMobs", "Weak Mobs", 1, function()
+    teleportToCFrame(CFrame.new(510, 77, -2984))
+end)
+
+createTeleportButton(lobbyPanel, "TP_Portals", "Portals", 2, function()
+    teleportToCFrame(CFrame.new(568, 77, -3083))
+end)
+
+createTeleportButton(lobbyPanel, "TP_Events", "Events", 3, function()
+    teleportToCFrame(CFrame.new(515, 77, -3219))
+end)
+
+createTeleportButton(doodlePanel, "TP_LowResets", "Teleport to Low Resets", 1, function()
+    teleportToCFrame(CFrame.new(-69, 11, -346))
+end)
+
+createTeleportButton(doodlePanel, "TP_DoodleSphere", "Teleport to the Back of Doodle Sphere", 2, function()
+    teleportToCFrame(CFrame.new(-149, 4, -452))
+end)
+createTeleportButton(doodlePanel, "TP_HighResets", "Teleport to High Resets", 3, function()
+    teleportToCFrame(CFrame.new(-247, 4, -339))
+end)
+
+createTeleportButton(doodlePanel, "TP_FinalGate", "Teleport to Final Gate", 4, function()
+    teleportToCFrame(CFrame.new(-162, -8, -174))
+end)
+
+createTeleportButton(xpPanel, "TP_EventGoldXP", "Event - Gold/XP Grinding", 1, function()
+    teleportToCFrame(CFrame.new(-1617, 4, -1304))
+end)
+
+createTeleportButton(xpPanel, "TP_GoldXP", "Gold/XP Grinding", 2, function()
+    teleportToCFrame(CFrame.new(523, 403, -3398))
+end)
+
+
+local currentSpeedValue = 16
+local currentJumpValue = 50
+
+-- Speed Locking Slider Loop
+createSlider(miscPanel, "SpeedSlider", "Lock Speed", 16, 250, 1, function(val)
+    currentSpeedValue = val
+end)
+
+-- Jump Power Locking Slider Loop
+createSlider(miscPanel, "JumpSlider", "Lock Jump Power", 50, 250, 2, function(val)
+    currentJumpValue = val
+end)
+
+runService.RenderStepped:Connect(function()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        if hum.WalkSpeed ~= currentSpeedValue then hum.WalkSpeed = currentSpeedValue end
+        if hum.UseJumpPower then
+            if hum.JumpPower ~= currentJumpValue then hum.JumpPower = currentJumpValue end
+        else
+            -- Maps default jump power parameters safely to platform configurations
+            local convertedHeight = (currentJumpValue * currentJumpValue) / (2 * game.Workspace.Gravity)
+            if hum.JumpHeight ~= convertedHeight then hum.JumpHeight = convertedHeight end
+        end
+    end
+end)
+
+local clickTPActive = false
+local tpToggleBtn = createTeleportButton(miscPanel, "ToggleClickTP", "Click Teleport: OFF", 3, function()
+    clickTPActive = not clickTPActive
+    local btn = miscPanel:FindFirstChild("ToggleClickTP")
+    if btn then
+        btn.Text = clickTPActive and "Click Teleport: ON" or "Click Teleport: OFF"
+        btn.BackgroundColor3 = clickTPActive and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(53, 59, 72)
+    end
+end)
+
+mouse.Button1Down:Connect(function()
+    if clickTPActive and mouse.Target then
+        teleportToCFrame(CFrame.new(mouse.Hit.X, mouse.Hit.Y + 3, mouse.Hit.Z))
+    end
+end)
+
+local noclipActive = false
+local noclipToggleBtn = createTeleportButton(miscPanel, "ToggleNoclip", "Noclip: OFF", 4, function()
+    noclipActive = not noclipActive
+    local btn = miscPanel:FindFirstChild("ToggleNoclip")
+    if btn then
+        btn.Text = noclipActive and "Noclip: ON" or "Noclip: OFF"
+        btn.BackgroundColor3 = noclipActive and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(53, 59, 72)
+    end
+end)
+
+runService.Stepped:Connect(function()
+    if noclipActive and player.Character then
+        for _, part in ipairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+local confirmFrame = Instance.new("Frame")
+confirmFrame.Size = UDim2.new(1, 0, 1, 0)
+confirmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+confirmFrame.BackgroundTransparency = 0.05
+confirmFrame.Visible = false
+confirmFrame.ZIndex = 5
+confirmFrame.Parent = mainFrame
+
+local confirmCorner = Instance.new("UICorner")
+confirmCorner.CornerRadius = UDim.new(0, 10)
+confirmCorner.Parent = confirmFrame
+
+local confirmLabel = Instance.new("TextLabel")
+confirmLabel.Size = UDim2.new(1, -20, 0, 60)
+confirmLabel.Position = UDim2.new(0, 10, 0, 40)
+confirmLabel.BackgroundTransparency = 1
+confirmLabel.Text = "Are you sure you want to exit?"
+confirmLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmLabel.Font = Enum.Font.SourceSansBold
+confirmLabel.TextSize = 18
+confirmLabel.TextWrapped = true
+confirmLabel.ZIndex = 6
+confirmLabel.Parent = confirmFrame
+
+local yesButton = Instance.new("TextButton")
+yesButton.Size = UDim2.new(0, 90, 0, 35)
+yesButton.Position = UDim2.new(0.5, -100, 0.5, 20)
+yesButton.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+yesButton.Text = "Yes"
+yesButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+yesButton.Font = Enum.Font.SourceSansBold
+yesButton.TextSize = 16
+yesButton.ZIndex = 6
+yesButton.Parent = confirmFrame
+
+local yesCorner = Instance.new("UICorner")
+yesCorner.CornerRadius = UDim.new(0, 6)
+yesCorner.Parent = yesButton
+
+local noButton = Instance.new("TextButton")
+noButton.Size = UDim2.new(0, 90, 0, 35)
+noButton.Position = UDim2.new(0.5, 10, 0.5, 20)
+noButton.BackgroundColor3 = Color3.fromRGB(127, 140, 141)
+noButton.Text = "No"
+noButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+noButton.Font = Enum.Font.SourceSansBold
+noButton.TextSize = 16
+noButton.ZIndex = 6
+noButton.Parent = confirmFrame
+
+local noCorner = Instance.new("UICorner")
+noCorner.CornerRadius = UDim.new(0, 6)
+noCorner.Parent = noButton
+
+local isMinimized = false
+local originalSize = mainFrame.Size
+
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 320, 0, 40)
+        container.Visible = false
+        navBar.Visible = false
+        minimizeButton.Text = "+"
+    else
+        mainFrame.Size = originalSize
+        container.Visible = true
+        navBar.Visible = true
+        minimizeButton.Text = "-"
+    end
+end)
+
+exitButton.MouseButton1Click:Connect(function() confirmFrame.Visible = true end)
+noButton.MouseButton1Click:Connect(function() confirmFrame.Visible = false end)
+yesButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
