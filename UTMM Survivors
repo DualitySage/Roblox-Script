@@ -108,13 +108,13 @@ local function createScrollingPanel(name)
 end
 
 local lobbyPanel = createScrollingPanel("Lobby")
-local doodlePanel = createScrollingPanel("DoodleSphere")
+local doodlePanel = createScrollingPanel("Realms")
 local xpPanel = createScrollingPanel("XPGrinding")
 local miscPanel = createScrollingPanel("Misc")
 
 local sections = {
     {panel = lobbyPanel, button = nil, label = "Lobby"},
-    {panel = doodlePanel, button = nil, label = "Doodle S."},
+    {panel = doodlePanel, button = nil, label = "Early-Middle"},
     {panel = xpPanel, button = nil, label = "XP Grind"},
     {panel = miscPanel, button = nil, label = "Misc"}
 }
@@ -245,31 +245,27 @@ local function teleportToCFrame(targetCFrame)
     end
 end
 
-createTeleportButton(lobbyPanel, "TP_WeakMobs", "Weak Mobs", 1, function()
+createTeleportButton(lobbyPanel, "TP_Early Game", "Early Reset Farm", 1, function()
     teleportToCFrame(CFrame.new(510, 77, -2984))
-end)
-
-createTeleportButton(lobbyPanel, "TP_Portals", "Portals", 2, function()
-    teleportToCFrame(CFrame.new(568, 77, -3083))
 end)
 
 createTeleportButton(lobbyPanel, "TP_Events", "Events", 3, function()
     teleportToCFrame(CFrame.new(515, 77, -3219))
 end)
 
-createTeleportButton(doodlePanel, "TP_LowResets", "Teleport to Low Resets", 1, function()
-    teleportToCFrame(CFrame.new(-69, 11, -346))
+createTeleportButton(doodlePanel, "TP_Middle", "Teleport to Doodle Sphere", 1, function()
+    teleportToCFrame(CFrame.new(-154, 4, -345))
 end)
 
-createTeleportButton(doodlePanel, "TP_DoodleSphere", "Teleport to the Back of Doodle Sphere", 2, function()
-    teleportToCFrame(CFrame.new(-149, 4, -452))
+createTeleportButton(doodlePanel, "TP_Shop", "Teleport to Doodle Sphere Shop", 2, function()
+    teleportToCFrame(CFrame.new(-61, -7, -264))
 end)
-createTeleportButton(doodlePanel, "TP_HighResets", "Teleport to High Resets", 3, function()
-    teleportToCFrame(CFrame.new(-247, 4, -339))
+createTeleportButton(doodlePanel, "TP_Void", "Teleport to Void", 3, function()
+    teleportToCFrame(CFrame.new(1157, 1317, -3858))
 end)
 
-createTeleportButton(doodlePanel, "TP_FinalGate", "Teleport to Final Gate", 4, function()
-    teleportToCFrame(CFrame.new(-162, -8, -174))
+createTeleportButton(doodlePanel, "TP_LostUniverse", "Teleport to Lost Universe", 4, function()
+    teleportToCFrame(CFrame.new(4522, 1563, -1373))
 end)
 
 createTeleportButton(xpPanel, "TP_EventGoldXP", "Event - Gold/XP Grinding", 1, function()
