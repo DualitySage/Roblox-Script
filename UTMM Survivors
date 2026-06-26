@@ -108,13 +108,13 @@ local function createScrollingPanel(name)
 end
 
 local lobbyPanel = createScrollingPanel("Lobby")
-local doodlePanel = createScrollingPanel("Realms")
+local doodlePanel = createScrollingPanel("DoodleSphere")
 local xpPanel = createScrollingPanel("XPGrinding")
 local miscPanel = createScrollingPanel("Misc")
 
 local sections = {
     {panel = lobbyPanel, button = nil, label = "Lobby"},
-    {panel = doodlePanel, button = nil, label = "Early-Middle"},
+    {panel = doodlePanel, button = nil, label = "Doodle S."},
     {panel = xpPanel, button = nil, label = "XP Grind"},
     {panel = miscPanel, button = nil, label = "Misc"}
 }
@@ -245,27 +245,31 @@ local function teleportToCFrame(targetCFrame)
     end
 end
 
-createTeleportButton(lobbyPanel, "TP_Early Game", "Early Reset Farm", 1, function()
+createTeleportButton(lobbyPanel, "TP_WeakMobs", "Weak Mobs", 1, function()
     teleportToCFrame(CFrame.new(510, 77, -2984))
+end)
+
+createTeleportButton(lobbyPanel, "TP_Portals", "Portals", 2, function()
+    teleportToCFrame(CFrame.new(568, 77, -3083))
 end)
 
 createTeleportButton(lobbyPanel, "TP_Events", "Events", 3, function()
     teleportToCFrame(CFrame.new(515, 77, -3219))
 end)
 
-createTeleportButton(doodlePanel, "TP_Middle", "Teleport to Doodle Sphere", 1, function()
-    teleportToCFrame(CFrame.new(-154, 4, -345))
+createTeleportButton(doodlePanel, "TP_LowResets", "Teleport to Low Resets", 1, function()
+    teleportToCFrame(CFrame.new(-69, 11, -346))
 end)
 
-createTeleportButton(doodlePanel, "TP_Shop", "Teleport to Doodle Sphere Shop", 2, function()
-    teleportToCFrame(CFrame.new(-61, -7, -264))
+createTeleportButton(doodlePanel, "TP_DoodleSphere", "Teleport to the Back of Doodle Sphere", 2, function()
+    teleportToCFrame(CFrame.new(-149, 4, -452))
 end)
-createTeleportButton(doodlePanel, "TP_Void", "Teleport to Void", 3, function()
-    teleportToCFrame(CFrame.new(1157, 1317, -3858))
+createTeleportButton(doodlePanel, "TP_HighResets", "Teleport to High Resets", 3, function()
+    teleportToCFrame(CFrame.new(-247, 4, -339))
 end)
 
-createTeleportButton(doodlePanel, "TP_LostUniverse", "Teleport to Lost Universe", 4, function()
-    teleportToCFrame(CFrame.new(4522, 1563, -1373))
+createTeleportButton(doodlePanel, "TP_FinalGate", "Teleport to Final Gate", 4, function()
+    teleportToCFrame(CFrame.new(-162, -8, -174))
 end)
 
 createTeleportButton(xpPanel, "TP_EventGoldXP", "Event - Gold/XP Grinding", 1, function()
@@ -290,11 +294,142 @@ createSlider(miscPanel, "JumpSlider", "Lock Jump Power", 50, 250, 2, function(va
     currentJumpValue = val
 end)
 
+-- ==========================================
+-- INTEGRATED FLIGHT SYSTEM CONFIGURATION
+-- ==========================================
+local isFlying = false
+local currentFlightSpeed = 50
+local flyConnection = nil
+local freezeVelocity = nil
+
+local function resetCharacterJoints()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        local animator = hum:FindFirstChildOfClass("Animator")
+        if animator then
+            for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                track:Stop(0)
+            end
+        end
+    end
+    if char then
+        for _, motor in ipairs(char:GetDescendants()) do
+            if motor:IsA("Motor6D") and motor.Name ~= "Neck" then
+                motor.Transform = CFrame.new()
+            end
+        end
+    end
+end
+
+local function stopFlying()
+    if not isFlying then return end
+    isFlying = false
+    
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+    if freezeVelocity then freezeVelocity:Destroy() freezeVelocity = nil end
+    
+    local char = player.Character
+    local animateScript = char and char:FindFirstChild("Animate")
+    if animateScript then
+        animateScript.Enabled = true
+    end
+    
+    local btn = miscPanel:FindFirstChild("ToggleFlight")
+    if btn then
+        btn.Text = "Flight: OFF"
+        btn.BackgroundColor3 = Color3.fromRGB(53, 59, 72)
+    end
+end
+
+local function startFlying()
+    if isFlying then return end
+    local char = player.Character
+    local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+    if not char or not rootPart then return end
+    
+    isFlying = true
+    
+    local animateScript = char:FindFirstChild("Animate")
+    if animateScript then
+        animateScript.Enabled = false
+    end
+    resetCharacterJoints()
+    
+    rootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+    rootPart.AssemblyAngularVelocity = Vector3.new(0,0,0)
+    
+    freezeVelocity = Instance.new("BodyVelocity")
+    freezeVelocity.Name = "StaticFlightAnchor"
+    freezeVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    freezeVelocity.Velocity = Vector3.new(0, 0, 0)
+    freezeVelocity.Parent = rootPart
+    
+    local btn = miscPanel:FindFirstChild("ToggleFlight")
+    if btn then
+        btn.Text = "Flight: ON"
+        btn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    end
+    
+    local UserInputService = game:GetService("UserInputService")
+    local camera = workspace.CurrentCamera
+    
+    flyConnection = runService.Heartbeat:Connect(function(deltaTime)
+        local activeChar = player.Character
+        local activeRoot = activeChar and activeChar:FindFirstChild("HumanoidRootPart")
+        if not isFlying or not activeRoot then return end
+        
+        resetCharacterJoints()
+        
+        local moveDirection = Vector3.new(0, 0, 0)
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection = moveDirection + camera.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection = moveDirection - camera.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection = moveDirection + camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection = moveDirection - camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+        end
+        
+        local lookVector = camera.CFrame.LookVector
+        local targetPosition = activeRoot.Position + (moveDirection * currentFlightSpeed * deltaTime)
+        
+        activeRoot.CFrame = CFrame.lookAt(targetPosition, targetPosition + lookVector)
+        activeRoot.AssemblyLinearVelocity = Vector3.new(0,0,0)
+    end)
+end
+
+-- Flight Toggle Button (Layout Order 3)
+createTeleportButton(miscPanel, "ToggleFlight", "Flight: OFF", 3, function()
+    if isFlying then stopFlying() else startFlying() end
+end)
+
+-- Flight Speed Slider Loop (Layout Order 4)
+createSlider(miscPanel, "FlightSpeedSlider", "Flight Speed", 50, 400, 4, function(val)
+    currentFlightSpeed = val
+end)
+-- ==========================================
+
 runService.RenderStepped:Connect(function()
     local char = player.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum then
-        if hum.WalkSpeed ~= currentSpeedValue then hum.WalkSpeed = currentSpeedValue end
+        -- Only override walkspeed if the player isn't currently flying
+        if not isFlying and hum.WalkSpeed ~= currentSpeedValue then 
+            hum.WalkSpeed = currentSpeedValue 
+        end
+        
         if hum.UseJumpPower then
             if hum.JumpPower ~= currentJumpValue then hum.JumpPower = currentJumpValue end
         else
@@ -306,7 +441,8 @@ runService.RenderStepped:Connect(function()
 end)
 
 local clickTPActive = false
-local tpToggleBtn = createTeleportButton(miscPanel, "ToggleClickTP", "Click Teleport: OFF", 3, function()
+-- Shifted Layout Order to 5 to make room for flight tools
+local tpToggleBtn = createTeleportButton(miscPanel, "ToggleClickTP", "Click Teleport: OFF", 5, function()
     clickTPActive = not clickTPActive
     local btn = miscPanel:FindFirstChild("ToggleClickTP")
     if btn then
@@ -322,7 +458,8 @@ mouse.Button1Down:Connect(function()
 end)
 
 local noclipActive = false
-local noclipToggleBtn = createTeleportButton(miscPanel, "ToggleNoclip", "Noclip: OFF", 4, function()
+-- Shifted Layout Order to 6 to stay at the bottom
+local noclipToggleBtn = createTeleportButton(miscPanel, "ToggleNoclip", "Noclip: OFF", 6, function()
     noclipActive = not noclipActive
     local btn = miscPanel:FindFirstChild("ToggleNoclip")
     if btn then
@@ -340,6 +477,12 @@ runService.Stepped:Connect(function()
         end
     end
 end)
+
+-- Character Added Hook (Clean up flight states on respawn/death)
+player.CharacterAdded:Connect(function()
+    stopFlying()
+end)
+
 
 local confirmFrame = Instance.new("Frame")
 confirmFrame.Size = UDim2.new(1, 0, 1, 0)
